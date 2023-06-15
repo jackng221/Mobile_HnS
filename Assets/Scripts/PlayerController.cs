@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.OnScreen;
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,9 +12,12 @@ public class PlayerController : MonoBehaviour
     Rigidbody rb;
     [SerializeField] GameObject camYaw;
     [SerializeField] GameObject camPitch;
+    [SerializeField] GameObject stickL;
+    [SerializeField] GameObject charObj;
 
     Vector2 moveInput;
     Vector3 lookInput;
+    public bool doLook = false;
 
     [SerializeField] float moveSpeed = 100f;
     [SerializeField] float lookSpeed = 100f;
@@ -41,17 +46,27 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        moveInput = playerInputActions.action.move.ReadValue<Vector2>();
-        //Debug.Log(moveInput);
-        lookInput = playerInputActions.action.look.ReadValue<Vector2>();
+        GetInput();
     }
 
     private void FixedUpdate()
     {
         Move(moveInput);
-        Look(lookInput);
+        if (doLook)
+        {
+            Look(lookInput);
+        }
     }
 
+    void RotateChar(Vector2 input)
+    {
+        charObj.transform.rotation = Quaternion.LookRotation(camYaw.transform.forward);
+    }
+    void GetInput()
+    {
+        moveInput = playerInputActions.Player.Move.ReadValue<Vector2>();
+        lookInput = playerInputActions.Player.Look.ReadValue<Vector2>();
+    }
     void Move(Vector2 input)
     {
         rb.velocity = (input.x * camYaw.transform.right + input.y * camYaw.transform.forward).normalized * moveSpeed * Time.deltaTime + new Vector3(0, rb.velocity.y, 0);
