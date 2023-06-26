@@ -6,7 +6,7 @@ public class AnimationEvents : MonoBehaviour
 {
     void OnFootstep()
     {
-        Debug.Log("FootstepSound");
+        //Debug.Log("FootstepSound");
     }
     void OnLand()
     {

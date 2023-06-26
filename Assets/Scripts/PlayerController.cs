@@ -1,10 +1,14 @@
+using RotaryHeart.Lib.PhysicsExtension;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.OnScreen;
+using UnityEngine.Windows;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 public class PlayerController : MonoBehaviour
 {
@@ -20,10 +24,13 @@ public class PlayerController : MonoBehaviour
     public bool doMove = false;
     public bool doJump = false;
     bool inAir = false;
+    GroundDetect grdDetect;
+    bool isGrounded;
 
-    [SerializeField] float moveSpeed = 100f;
+    [SerializeField] float moveMultiplier = 150;
     [SerializeField] float lookSpeed = 100f;
     float pitchDegree;
+    [SerializeField] float jumpVelocity = 0.5f;
 
     Animator animator;
 
@@ -32,6 +39,7 @@ public class PlayerController : MonoBehaviour
         playerInputActions = new PlayerInputActions();
         rb = GetComponent<Rigidbody>();
         animator = GetComponentInChildren<Animator>();
+        grdDetect = GetComponentInChildren<GroundDetect>();
     }
 
     private void Start()
@@ -52,29 +60,31 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         moveInput = playerInputActions.Player.Move.ReadValue<Vector2>();
+
         lookInput = playerInputActions.Player.Look.ReadValue<Vector2>();
 
-        if (playerInputActions.Player.Move.IsPressed())
+        if (moveInput.magnitude > 0.1f)
         {
             doMove = true;
         }
         if (playerInputActions.Player.Jump.WasPressedThisFrame())
         {
             doJump = true;
-            Debug.Log("Pressed");
         }
     }
 
     private void FixedUpdate()
     {
+        IsGrounded();
         if (doMove)
         {
             Move(moveInput);
+
             doMove = false;
         }
         else
         {
-            animator.SetFloat("Speed", 0);
+            animator.SetFloat("Speed", Mathf.Lerp(animator.GetFloat("Speed"), 0, 0.25f));
         }
         if (doLook)
         {
@@ -83,31 +93,32 @@ public class PlayerController : MonoBehaviour
         if (doJump)
         {
             doJump = false;
-            if (IsGrounded() == false) {
+            if (isGrounded == false) {
                 return;
             }
             Jump();
         }
-        if (inAir && IsGrounded())
+        if (inAir && isGrounded && rb.velocity.y <= 0.5f)
         {
             Land();
             inAir = false;
         }
         animator.SetBool("FreeFall", inAir);
-        animator.SetBool("Grounded", IsGrounded());
+        animator.SetBool("Grounded", isGrounded);
     }
 
     void RotateChar()
     {
-        charObj.transform.rotation = Quaternion.Lerp(charObj.transform.rotation, Quaternion.LookRotation(camYaw.transform.forward), 0.25f);
+        //charObj.transform.rotation = Quaternion.Lerp(charObj.transform.rotation, Quaternion.LookRotation(camYaw.transform.forward), 0.2f);
+        charObj.transform.rotation = Quaternion.Lerp(charObj.transform.rotation, Quaternion.LookRotation(new Vector3 (rb.velocity.x, 0, rb.velocity.z) ), 0.15f);
     }
 
     void Move(Vector2 input)
     {
-        rb.velocity = (input.x * camYaw.transform.right + input.y * camYaw.transform.forward).normalized * moveSpeed * Time.deltaTime + new Vector3(0, rb.velocity.y, 0);
+        rb.velocity = (input.x * camYaw.transform.right + input.y * camYaw.transform.forward).normalized * input.magnitude * moveMultiplier * Time.deltaTime + new Vector3(0, rb.velocity.y, 0);
         //Debug.Log(rb.velocity);
         RotateChar();
-        animator.SetFloat("Speed", input.magnitude * 6);
+        animator.SetFloat("Speed", Mathf.Lerp (animator.GetFloat ("Speed"), input.magnitude, 0.1f) );
     }
     void Look(Vector2 input)
     {
@@ -120,7 +131,7 @@ public class PlayerController : MonoBehaviour
     void Jump()
     {
         animator.SetBool("Jump", true);
-        rb.velocity += new Vector3(0, 3, 0);
+        rb.velocity += new Vector3(0, jumpVelocity, 0);
         inAir = true;
     }
     void Land()
@@ -128,22 +139,15 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("Jump", false);
         Debug.Log("Land");
     }
-    bool IsGrounded()
+    void IsGrounded()
     {
-        CapsuleCollider collider = GetComponentInChildren<CapsuleCollider>();
-        RaycastHit hit;
-
-        if (Physics.Raycast(collider.transform.position, collider.transform.up * -1, out hit, 10))
+        if (grdDetect.IsGrounded)
         {
-            Debug.DrawRay(collider.transform.position, collider.transform.up * -1 * 1, Color.red);
-            return true;
+            isGrounded = true;
         }
-        Debug.DrawRay(collider.transform.position, collider.transform.up * -1 * 1, Color.yellow);
-        return false;
-    }
-    public void test()
-    {
-        doJump = true;
-        Debug.Log("Pressed");
+        else
+        {
+            isGrounded = false;
+        }    
     }
 }
