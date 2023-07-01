@@ -1,7 +1,9 @@
+using Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -13,8 +15,8 @@ public class PlayerController : MonoBehaviour
 {
     PlayerInputActions playerInputActions;
     Rigidbody rb;
-    [SerializeField] GameObject camYaw;
-    [SerializeField] GameObject camPitch;
+    [SerializeField] GameObject cam;
+    [SerializeField] CinemachineInputProvider inputProvider;
     [SerializeField] GameObject charObj;
 
     Vector2 moveInput;
@@ -28,7 +30,7 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] float moveMultiplier = 150;
     [SerializeField] float lookSpeed = 100f;
-    float pitchDegree;
+    float pitchDegree = 0;
     [SerializeField] float jumpVelocity = 0.5f;
 
     Animator animator;
@@ -59,8 +61,16 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         moveInput = playerInputActions.Player.Move.ReadValue<Vector2>();
-
         lookInput = playerInputActions.Player.Look.ReadValue<Vector2>();
+
+        if (doLook)
+        {
+            inputProvider.enabled = true;
+        }
+        else
+        {
+            inputProvider.enabled = false;
+        }
 
         if (moveInput.magnitude > 0.1f)
         {
@@ -85,10 +95,7 @@ public class PlayerController : MonoBehaviour
         {
             animator.SetFloat("Speed", Mathf.Lerp(animator.GetFloat("Speed"), 0, 0.25f));
         }
-        if (doLook)
-        {
-            Look(lookInput);
-        }
+
         if (doJump)
         {
             doJump = false;
@@ -104,7 +111,9 @@ public class PlayerController : MonoBehaviour
         }
         animator.SetBool("FreeFall", inAir);
         animator.SetBool("Grounded", isGrounded);
+
     }
+
 
     void RotateChar()
     {
@@ -114,18 +123,12 @@ public class PlayerController : MonoBehaviour
 
     void Move(Vector2 input)
     {
-        rb.velocity = (input.x * camYaw.transform.right + input.y * camYaw.transform.forward).normalized * input.magnitude * moveMultiplier * Time.deltaTime + new Vector3(0, rb.velocity.y, 0);
-        //Debug.Log(rb.velocity);
+        Vector3 direction = (input.x * cam.transform.right + input.y * cam.transform.forward);  //<- somehow normalized doesn't work here
+        direction = new Vector3(direction.x, 0, direction.z).normalized;
+        rb.velocity = direction * input.magnitude * moveMultiplier * Time.deltaTime + new Vector3(0, rb.velocity.y, 0);
+
         RotateChar();
         animator.SetFloat("Speed", Mathf.Lerp (animator.GetFloat ("Speed"), input.magnitude, 0.1f) );
-    }
-    void Look(Vector2 input)
-    {
-        camYaw.transform.Rotate(new Vector3(0, input.x, 0) * lookSpeed * Time.deltaTime);
-
-        pitchDegree -= input.y * lookSpeed * Time.deltaTime;
-        pitchDegree = Mathf.Clamp(pitchDegree, -90, 90);
-        camPitch.transform.eulerAngles = new Vector3(pitchDegree, camPitch.transform.eulerAngles.y, camPitch.transform.eulerAngles.z);
     }
     void Jump()
     {
