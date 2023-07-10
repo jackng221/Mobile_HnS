@@ -1030,11 +1030,11 @@ MonoBehaviour:
   cam: {fileID: 330585543}
   inputProvider: {fileID: 582384466}
   charObj: {fileID: 1404457218}
+  animator: {fileID: 0}
   doLook: 0
   doMove: 0
-  doJump: 0
+  grdDetect: {fileID: 0}
   moveMultiplier: 150
-  lookSpeed: 50
   jumpVelocity: 5
 --- !u!4 &716511388
 Transform:
@@ -1874,6 +1874,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04cb45acbf9078a4c934f056e7b6b6fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isGrounded: 0
 --- !u!135 &1621529066
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -2459,7 +2460,7 @@ PrefabInstance:
     - target: {fileID: 9500000, guid: d288a0e4a2d923b46898986e979da643, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 9100000, guid: 167cf381a9ddaf542a9680ec40a0e6a8, type: 2}
+      objectReference: {fileID: 9100000, guid: 50ee8e4586486de46a04da7942da83d7, type: 2}
     - target: {fileID: 9500000, guid: d288a0e4a2d923b46898986e979da643, type: 3}
       propertyPath: m_ApplyRootMotion
       value: 0

@@ -8,7 +8,7 @@ using UnityEngine.InputSystem.OnScreen;
 
 public class ScreenSwipe : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-    [SerializeField] PlayerController playerController;
+    [SerializeField] Player playerController;
 
     void IPointerDownHandler.OnPointerDown(PointerEventData eventData)
     {

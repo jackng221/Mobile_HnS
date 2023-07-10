@@ -1,39 +1,45 @@
 using Cinemachine;
-using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditor.IMGUI.Controls;
-using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.OnScreen;
-using UnityEngine.Windows;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
-public class PlayerController : MonoBehaviour
+public class Player : MonoBehaviour, IDamageable
 {
-    PlayerInputActions playerInputActions;
+    public PlayerInputActions playerInputActions;
     Rigidbody rb;
     [SerializeField] GameObject cam;
     [SerializeField] CinemachineInputProvider inputProvider;
     [SerializeField] GameObject charObj;
+    public Animator animator;
 
+    //Inputs
     Vector2 moveInput;
-    Vector3 lookInput;
     public bool doLook = false;
     public bool doMove = false;
-    public bool doJump = false;
-    bool inAir = false;
-    GroundDetect grdDetect;
-    bool isGrounded;
 
+    //Ground detect script
+    public GroundDetect grdDetect;
+
+    //Stats
     [SerializeField] float moveMultiplier = 150;
-    [SerializeField] float lookSpeed = 100f;
-    float pitchDegree = 0;
     [SerializeField] float jumpVelocity = 0.5f;
+    [SerializeField] public float maxHealth { get; set; } = 100f;
+    public float currentHealth { get; set; }
 
-    Animator animator;
+    //State
+    PlayerState currentState;
+    public PlayerIdle idleState;
+    public PlayerJumping jumpingState;
+    public PlayerInAir inAirState;
+    public PlayerLanding landingState;
+
+    public enum animations 
+    {
+        IdleWalkRunBlend,
+        JumpStart,
+        InAir,
+        JumpLand,
+    };
 
     private void Awake()
     {
@@ -41,11 +47,6 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         animator = GetComponentInChildren<Animator>();
         grdDetect = GetComponentInChildren<GroundDetect>();
-    }
-
-    private void Start()
-    {
-        //Application.targetFrameRate = 30;
     }
 
     private void OnEnable()
@@ -58,10 +59,27 @@ public class PlayerController : MonoBehaviour
         playerInputActions.Disable();
     }
 
+    private void Start()
+    {
+        //Application.targetFrameRate = 30;
+        currentHealth = maxHealth;
+
+        //state constructors
+        idleState = new PlayerIdle();
+        jumpingState = new PlayerJumping(jumpVelocity, rb);
+        inAirState = new PlayerInAir(rb);
+        landingState = new PlayerLanding();
+
+        //Default state: idle
+        currentState = idleState;
+        currentState.EnterState(this);
+    }
+
     private void Update()
     {
+        currentState.UpdateState(this);
+
         moveInput = playerInputActions.Player.Move.ReadValue<Vector2>();
-        lookInput = playerInputActions.Player.Look.ReadValue<Vector2>();
 
         if (doLook)
         {
@@ -76,15 +94,11 @@ public class PlayerController : MonoBehaviour
         {
             doMove = true;
         }
-        if (playerInputActions.Player.Jump.WasPressedThisFrame())
-        {
-            doJump = true;
-        }
     }
 
     private void FixedUpdate()
     {
-        IsGrounded();
+        currentState.FixedUpdateState(this);
         if (doMove)
         {
             Move(moveInput);
@@ -96,31 +110,28 @@ public class PlayerController : MonoBehaviour
             animator.SetFloat("Speed", Mathf.Lerp(animator.GetFloat("Speed"), 0, 0.25f));
         }
 
-        if (doJump)
-        {
-            doJump = false;
-            if (isGrounded == false) {
-                return;
-            }
-            Jump();
-        }
-        if (inAir && isGrounded && rb.velocity.y <= 0.5f)
-        {
-            Land();
-            inAir = false;
-        }
-        animator.SetBool("FreeFall", inAir);
-        animator.SetBool("Grounded", isGrounded);
+        //if (inAir && grdDetect.IsGrounded && rb.velocity.y <= 0.5f)
+        //{
+        //    Land();
+        //    inAir = false;
+        //}
+        //animator.SetBool("FreeFall", inAir);
+        //animator.SetBool("Grounded", grdDetect.IsGrounded);
 
     }
 
+    public void SwitchState(PlayerState state)
+    {
+        currentState = state;
+        currentState.EnterState(this);
+    }
 
+    //Movement
     void RotateChar()
     {
         //charObj.transform.rotation = Quaternion.Lerp(charObj.transform.rotation, Quaternion.LookRotation(camYaw.transform.forward), 0.2f);
         charObj.transform.rotation = Quaternion.Lerp(charObj.transform.rotation, Quaternion.LookRotation(new Vector3 (rb.velocity.x, 0, rb.velocity.z) ), 0.15f);
     }
-
     void Move(Vector2 input)
     {
         Vector3 direction = (input.x * cam.transform.right + input.y * cam.transform.forward);  //<- somehow normalized doesn't work here
@@ -130,26 +141,30 @@ public class PlayerController : MonoBehaviour
         RotateChar();
         animator.SetFloat("Speed", Mathf.Lerp (animator.GetFloat ("Speed"), input.magnitude, 0.1f) );
     }
-    void Jump()
+    //void Jump()
+    //{
+    //    animator.SetBool("Jump", true);
+    //    rb.velocity += new Vector3(0, jumpVelocity, 0);
+    //    inAir = true;
+    //}
+    //void Land()
+    //{
+    //    animator.SetBool("Jump", false);
+    //    Debug.Log("Land");
+    //}
+
+    //Combat
+    public void Damage(float damage)
     {
-        animator.SetBool("Jump", true);
-        rb.velocity += new Vector3(0, jumpVelocity, 0);
-        inAir = true;
-    }
-    void Land()
-    {
-        animator.SetBool("Jump", false);
-        Debug.Log("Land");
-    }
-    void IsGrounded()
-    {
-        if (grdDetect.IsGrounded)
+        currentHealth -= damage;
+        if (currentHealth <= 0)
         {
-            isGrounded = true;
+            Die();
         }
-        else
-        {
-            isGrounded = false;
-        }    
+    }
+
+    public void Die()
+    {
+        Destroy(gameObject);
     }
 }

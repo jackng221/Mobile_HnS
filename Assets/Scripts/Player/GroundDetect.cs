@@ -5,7 +5,7 @@ using UnityEngine;
 public class GroundDetect : MonoBehaviour
 {
     int collision;
-    bool isGrounded;
+    [SerializeField] bool isGrounded;
     public bool IsGrounded { get { return isGrounded; } }
 
     private void Start()

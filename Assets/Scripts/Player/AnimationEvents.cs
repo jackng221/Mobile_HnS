@@ -10,6 +10,6 @@ public class AnimationEvents : MonoBehaviour
     }
     void OnLand()
     {
-        Debug.Log("LandSound");
+        //Debug.Log("LandSound");
     }
 }
