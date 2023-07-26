@@ -36,6 +36,15 @@ public class PlayerJumping : PlayerState
     }
     public override void FixedUpdateState(Player player)
     {
+        if (player.doMove)
+        {
+            player.Move();
 
+            player.doMove = false;
+        }
+        else
+        {
+            player.animator.SetFloat("Speed", Mathf.Lerp(player.animator.GetFloat("Speed"), 0, 0.25f));
+        }
     }
 }

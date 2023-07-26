@@ -23,6 +23,17 @@ public class PlayerLanding : PlayerState
 
     public override void UpdateState(Player player)
     {
+        if (player.doMove)
+        {
+            player.Move();
+
+            player.doMove = false;
+        }
+        else
+        {
+            player.animator.SetFloat("Speed", Mathf.Lerp(player.animator.GetFloat("Speed"), 0, 0.25f));
+        }
+
         if (player.animator.GetAnimatorTransitionInfo(0).normalizedTime == 0)
         {
             player.SwitchState(player.idleState);

@@ -1,4 +1,5 @@
 using Cinemachine;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,12 +11,14 @@ public class Player : MonoBehaviour, IDamageable
     [SerializeField] GameObject cam;
     [SerializeField] CinemachineInputProvider inputProvider;
     [SerializeField] GameObject charObj;
+    public GameObject CharObj { get { return charObj; } }
     public Animator animator;
 
     //Inputs
-    Vector2 moveInput;
+    public Vector2 moveInput { get; private set; }
     public bool doLook = false;
     public bool doMove = false;
+    public bool doAttack = false;
 
     //Ground detect script
     public GroundDetect grdDetect;
@@ -25,6 +28,9 @@ public class Player : MonoBehaviour, IDamageable
     [SerializeField] float jumpVelocity = 0.5f;
     [SerializeField] public float maxHealth { get; set; } = 100f;
     public float currentHealth { get; set; }
+    [SerializeField] float moveRotateLerp = 0.15f;
+    [SerializeField] float attackRotateLerp = 0.01f;
+    public float AttackRotateLerp { get { return attackRotateLerp; } }
 
     //State
     PlayerState currentState;
@@ -32,6 +38,7 @@ public class Player : MonoBehaviour, IDamageable
     public PlayerJumping jumpingState;
     public PlayerInAir inAirState;
     public PlayerLanding landingState;
+    public PlayerAttack attackState;
 
     public enum animations 
     {
@@ -39,6 +46,9 @@ public class Player : MonoBehaviour, IDamageable
         JumpStart,
         InAir,
         JumpLand,
+        Combo1,
+        Combo2,
+        Combo3
     };
 
     private void Awake()
@@ -69,6 +79,7 @@ public class Player : MonoBehaviour, IDamageable
         jumpingState = new PlayerJumping(jumpVelocity, rb);
         inAirState = new PlayerInAir(rb);
         landingState = new PlayerLanding();
+        attackState = new PlayerAttack();
 
         //Default state: idle
         currentState = idleState;
@@ -81,6 +92,7 @@ public class Player : MonoBehaviour, IDamageable
 
         moveInput = playerInputActions.Player.Move.ReadValue<Vector2>();
 
+        //get from ScreenSwipe script
         if (doLook)
         {
             inputProvider.enabled = true;
@@ -94,21 +106,18 @@ public class Player : MonoBehaviour, IDamageable
         {
             doMove = true;
         }
+
+        if (playerInputActions.Player.Fire.WasPressedThisFrame())
+        {
+            //doAttack = true;
+            StartCoroutine(AttackBuffer());
+        }
+        //Debug.Log(doAttack);
     }
 
     private void FixedUpdate()
     {
         currentState.FixedUpdateState(this);
-        if (doMove)
-        {
-            Move(moveInput);
-
-            doMove = false;
-        }
-        else
-        {
-            animator.SetFloat("Speed", Mathf.Lerp(animator.GetFloat("Speed"), 0, 0.25f));
-        }
 
         //if (inAir && grdDetect.IsGrounded && rb.velocity.y <= 0.5f)
         //{
@@ -117,20 +126,39 @@ public class Player : MonoBehaviour, IDamageable
         //}
         //animator.SetBool("FreeFall", inAir);
         //animator.SetBool("Grounded", grdDetect.IsGrounded);
-
     }
 
+    //Functions
     public void SwitchState(PlayerState state)
     {
+        currentState.ExitState(this);
         currentState = state;
         currentState.EnterState(this);
     }
+    IEnumerator AttackBuffer()
+    {
+        float bufferTime = 0.2f;
+        do
+        {
+            doAttack = true; Debug.Log(doAttack);
+            bufferTime -= Time.deltaTime;
+            yield return null;
+        } while (bufferTime > 0);
+    }
 
     //Movement
-    void RotateChar()
+    public void RotateChar(float lerpValue)
     {
-        //charObj.transform.rotation = Quaternion.Lerp(charObj.transform.rotation, Quaternion.LookRotation(camYaw.transform.forward), 0.2f);
-        charObj.transform.rotation = Quaternion.Lerp(charObj.transform.rotation, Quaternion.LookRotation(new Vector3 (rb.velocity.x, 0, rb.velocity.z) ), 0.15f);
+        charObj.transform.rotation = Quaternion.Lerp(charObj.transform.rotation, Quaternion.LookRotation(new Vector3 (rb.velocity.x, 0, rb.velocity.z) ), lerpValue);
+    }
+    public void Move()
+    {
+        Vector3 direction = (moveInput.x * cam.transform.right + moveInput.y * cam.transform.forward);  //<- somehow normalized doesn't work here
+        direction = new Vector3(direction.x, 0, direction.z).normalized;
+        rb.velocity = direction * moveInput.magnitude * moveMultiplier * Time.deltaTime + new Vector3(0, rb.velocity.y, 0);
+
+        RotateChar(moveRotateLerp);
+        animator.SetFloat("Speed", Mathf.Lerp(animator.GetFloat("Speed"), moveInput.magnitude, 0.1f));
     }
     void Move(Vector2 input)
     {
@@ -138,7 +166,7 @@ public class Player : MonoBehaviour, IDamageable
         direction = new Vector3(direction.x, 0, direction.z).normalized;
         rb.velocity = direction * input.magnitude * moveMultiplier * Time.deltaTime + new Vector3(0, rb.velocity.y, 0);
 
-        RotateChar();
+        RotateChar(moveRotateLerp);
         animator.SetFloat("Speed", Mathf.Lerp (animator.GetFloat ("Speed"), input.magnitude, 0.1f) );
     }
     //void Jump()
@@ -154,6 +182,7 @@ public class Player : MonoBehaviour, IDamageable
     //}
 
     //Combat
+
     public void Damage(float damage)
     {
         currentHealth -= damage;

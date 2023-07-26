@@ -13,6 +13,11 @@ public class EquipmentManager : MonoBehaviour
 
     [SerializeField] List<EquipSlot> equipSlots;
 
+    private void Start()
+    {
+        DisplayEquipment();
+    }
+
     void DisplayEquipment()
     {
         foreach (EquipSlot slot in equipSlots)

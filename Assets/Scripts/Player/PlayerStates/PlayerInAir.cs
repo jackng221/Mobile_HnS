@@ -15,7 +15,7 @@ public class PlayerInAir : PlayerState
     {
         //Debug.Log("2");
 
-        player.animator.SetInteger("State", 2);
+        player.animator.SetTrigger("Float");
     }
 
     public override void ExitState(Player player)
@@ -29,6 +29,17 @@ public class PlayerInAir : PlayerState
     }
     public override void FixedUpdateState(Player player)
     {
+        if (player.doMove)
+        {
+            player.Move();
+
+            player.doMove = false;
+        }
+        else
+        {
+            player.animator.SetFloat("Speed", Mathf.Lerp(player.animator.GetFloat("Speed"), 0, 0.25f));
+        }
+
         if (player.grdDetect.IsGrounded && rb.velocity.y <= 0f)
         {
             player.SwitchState(player.landingState);
