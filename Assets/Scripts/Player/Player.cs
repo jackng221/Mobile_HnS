@@ -1,10 +1,11 @@
 using Cinemachine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Player : MonoBehaviour, IDamageable
+public class Player : MonoBehaviour, ICharacter
 {
     public PlayerInputActions playerInputActions;
     Rigidbody rb;
@@ -13,6 +14,7 @@ public class Player : MonoBehaviour, IDamageable
     [SerializeField] GameObject charObj;
     public GameObject CharObj { get { return charObj; } }
     public Animator animator;
+    RuntimeAnimatorController defaultController;
 
     //Inputs
     public Vector2 moveInput { get; private set; }
@@ -26,11 +28,15 @@ public class Player : MonoBehaviour, IDamageable
     //Stats
     [SerializeField] float moveMultiplier = 150;
     [SerializeField] float jumpVelocity = 0.5f;
-    [SerializeField] public float maxHealth { get; set; } = 100f;
-    public float currentHealth { get; set; }
     [SerializeField] float moveRotateLerp = 0.15f;
     [SerializeField] float attackRotateLerp = 0.01f;
     public float AttackRotateLerp { get { return attackRotateLerp; } }
+
+    [field: SerializeField] public float maxHealth { get; set; } = 100f;
+    [field: SerializeField] public float currentHealth { get; set; }
+    [field: SerializeField] public float attackPt { get; set; } = 1;
+    [field: SerializeField] public float defencePt { get; set; } = 1;
+    [field: SerializeField] public float speedPt { get; set; } = 1;
 
     //State
     PlayerState currentState;
@@ -39,6 +45,9 @@ public class Player : MonoBehaviour, IDamageable
     public PlayerInAir inAirState;
     public PlayerLanding landingState;
     public PlayerAttack attackState;
+
+    //Stance
+    public event Action OnChangeStance;
 
     public enum animations 
     {
@@ -56,6 +65,7 @@ public class Player : MonoBehaviour, IDamageable
         playerInputActions = new PlayerInputActions();
         rb = GetComponent<Rigidbody>();
         animator = GetComponentInChildren<Animator>();
+        defaultController = animator.runtimeAnimatorController;
         grdDetect = GetComponentInChildren<GroundDetect>();
     }
 
@@ -140,7 +150,7 @@ public class Player : MonoBehaviour, IDamageable
         float bufferTime = 0.2f;
         do
         {
-            doAttack = true; Debug.Log(doAttack);
+            doAttack = true; //Debug.Log(doAttack);
             bufferTime -= Time.deltaTime;
             yield return null;
         } while (bufferTime > 0);
@@ -160,7 +170,7 @@ public class Player : MonoBehaviour, IDamageable
         RotateChar(moveRotateLerp);
         animator.SetFloat("Speed", Mathf.Lerp(animator.GetFloat("Speed"), moveInput.magnitude, 0.1f));
     }
-    void Move(Vector2 input)
+    public void Move(Vector2 input)
     {
         Vector3 direction = (input.x * cam.transform.right + input.y * cam.transform.forward);  //<- somehow normalized doesn't work here
         direction = new Vector3(direction.x, 0, direction.z).normalized;
@@ -180,8 +190,19 @@ public class Player : MonoBehaviour, IDamageable
     //    animator.SetBool("Jump", false);
     //    Debug.Log("Land");
     //}
+    public void ChangeStance()
+    {
+        animator.runtimeAnimatorController = defaultController;
+        OnChangeStance?.Invoke();
+    }
+    public void ChangeStance(EquipmentData data)
+    {
+        animator.runtimeAnimatorController = data.stanceData.stanceAnimator;
+        OnChangeStance?. Invoke();
+    }
 
-    //Combat
+
+    //=========Combat
 
     public void Damage(float damage)
     {
@@ -195,5 +216,20 @@ public class Player : MonoBehaviour, IDamageable
     public void Die()
     {
         Destroy(gameObject);
+    }
+
+    public void AddAttack(float atk)
+    {
+        attackPt += atk;
+    }
+
+    public void AddDefence(float def)
+    {
+        defencePt += def;
+    }
+
+    public void AddSpeed(float spd)
+    {
+        speedPt += spd;
     }
 }

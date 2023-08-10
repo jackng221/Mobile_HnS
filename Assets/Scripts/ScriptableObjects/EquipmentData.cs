@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,14 +8,20 @@ public class EquipmentData : ScriptableObject
 {
     public enum EquipmentType
     {
-        OneHandSword,
-        TwoHandSword,
-        Shield,
-        ProtectGear
+        OneHand,
+        TwoHand
     }
-    public GameObject prefabObj;
     public string displayName;
     public float attackPt;
     public float defencePt;
-    public EquipmentType type;
+    public StanceData stanceData;
+    public bool leftHanded;
+    public bool rightHanded;
+    public List<LeftRightHitboxOnOff> HitboxOnOffList;
+}
+[Serializable]
+public class LeftRightHitboxOnOff
+{
+    public bool leftHitbox;
+    public bool rightHitbox;
 }

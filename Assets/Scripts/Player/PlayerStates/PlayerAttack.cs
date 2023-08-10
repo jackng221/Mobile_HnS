@@ -8,9 +8,13 @@ using static UnityEditor.Experimental.GraphView.GraphView;
 public class PlayerAttack : PlayerState
 {
     Player _player;
+    EquipmentManager equipManager;
+
     public override void EnterState(Player player)
     {
         _player = player;
+        equipManager = _player.GetComponent<EquipmentManager>();
+
         _player.animator.applyRootMotion = true;
         Attack();
     }
@@ -33,6 +37,7 @@ public class PlayerAttack : PlayerState
         }
     }
     [SerializeField] int currentCombo = 0;
+    public int CurrentCombo { get { return currentCombo; } }
     Coroutine lastCoroutine;
     bool canAttack = true;
 
@@ -44,18 +49,25 @@ public class PlayerAttack : PlayerState
         {
             case 0:
                 lastCoroutine = _player.StartCoroutine(SimpleComboTimer());
+                _player.GetComponent<CombatManager>().ReceiveAttackCommand(0);
                 _player.animator.Play("Combo1");
                 currentCombo = 1;
                 break;
             case 1:
+                if (currentCombo > _player.GetComponent<CombatManager>().HighestCombo) return; ;
                 _player.StopCoroutine(lastCoroutine);
+
                 lastCoroutine = _player.StartCoroutine(SimpleComboTimer());
+                _player.GetComponent<CombatManager>().ReceiveAttackCommand(1);
                 _player.animator.SetTrigger("Combo");
                 currentCombo = 2;
                 break;
             case 2:
+                if (currentCombo > _player.GetComponent<CombatManager>().HighestCombo) return; ;
                 _player.StopCoroutine(lastCoroutine);
+
                 lastCoroutine = _player.StartCoroutine(SimpleComboTimer());
+                _player.GetComponent<CombatManager>().ReceiveAttackCommand(2);
                 _player.animator.SetTrigger("Combo");
                 currentCombo = 3;
                 break;
@@ -64,6 +76,7 @@ public class PlayerAttack : PlayerState
     }
     void ResetCombo()
     {
+        _player.GetComponent<CombatManager>().ReceiveAttackCommand(-1);
         currentCombo = 0;
         _player.SwitchState(_player.idleState);
     }

@@ -10,17 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e835505ad5e56c44d908ded2fc27fb25, type: 3}
-  m_Name: Sword
+  m_Name: Halberd
   m_EditorClassIdentifier: 
-  displayName: Broadsword
-  attackPt: 1
-  defencePt: 0
-  stanceData: {fileID: 11400000, guid: 36b35f3d7433925478168484d0db0bce, type: 2}
+  displayName: Two-handed Halberd
+  attackPt: 2
+  defencePt: 1
+  stanceData: {fileID: 11400000, guid: 2d97aaabf0dd3ca488b82143cb76db7f, type: 2}
   leftHanded: 0
   rightHanded: 1
   HitboxOnOffList:
-  - leftHitbox: 0
-    rightHitbox: 1
   - leftHitbox: 0
     rightHitbox: 1
   - leftHitbox: 0

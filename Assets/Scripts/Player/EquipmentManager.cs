@@ -1,95 +1,145 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
-
-public enum EquipmentList
-{
-    Sword,
-    Shield
-}
 
 public class EquipmentManager : MonoBehaviour
 {
+    //[SerializeField] List<EquipSlot> equipSlots;
 
-    [SerializeField] List<EquipSlot> equipSlots;
+    //Weapon list
+    [SerializeField] GameObject wepSword;
+    public GameObject Weapon_Sword { get { return wepSword; } }
+    [SerializeField] GameObject wepHalberd;
+    public GameObject Weapon_Halberd { get { return wepHalberd; } }
+
+    [SerializeField] Transform leftHandHoldPos;
+    [SerializeField] Transform rightHandHoldPos;
+
+    GameObject leftHandEquip;
+    public GameObject LeftHandEquip { get { return leftHandEquip; } }
+    GameObject rightHandEquip;
+    public GameObject RightHandEquip { get { return rightHandEquip; } }
+
+    [SerializeField] GameObject startWeapon; //Starting weapon
+
+    public event Action OnWeaponEquip;
 
     private void Start()
     {
-        DisplayEquipment();
-    }
+        //DisplayEquipment();
 
-    void DisplayEquipment()
-    {
-        foreach (EquipSlot slot in equipSlots)
+        if (startWeapon)
         {
-            if (slot.data == null)
-            {
-                Destroy(slot.equipmentObj);
-            }
-            else
-            {
-                if (slot.equipmentObj != null) { continue; }
-
-                slot.equipmentObj = Instantiate(slot.data.prefabObj, slot.HoldingPos);
-
-                if (slot.SlotName == SlotList.RightHand)
-                {
-                    slot.equipmentObj.transform.Rotate(new Vector3(180, 0, 0));
-                }
-            }
+            Equip(startWeapon);
         }
     }
-    void Equip(SlotList slotName, EquipmentList equipmentName)
+
+    //void DisplayEquipment()
+    //{
+    //    foreach (EquipSlot slot in equipSlots)
+    //    {
+    //        if (slot.data == null)
+    //        {
+    //            Destroy(slot.equipmentObj);
+    //        }
+    //        else
+    //        {
+    //            if (slot.equipmentObj != null) { continue; }
+
+    //            slot.equipmentObj = Instantiate(slot.data.prefabObj, slot.HoldingPos);
+
+    //            if (slot.SlotName == SlotList.RightHand)
+    //            {
+    //                slot.equipmentObj.transform.Rotate(new Vector3(180, 0, 0));
+    //            }
+    //        }
+    //    }
+    //}
+
+    public void Equip(GameObject prefab)
     {
-        EquipmentData equipmentData = Resources.Load<EquipmentData>("Equipments/" +  equipmentName.ToString() );
-        if (equipmentData == null)
-        {
-            Debug.Log("Failed to load equipment data");
-            return;
-        };
+        //foreach (EquipSlot slot in equipSlots)
+        //{
+        //    if (slot.SlotName == slotName)
+        //    {
+        //        if (slot.data != null)
+        //        {
+        //            Debug.Log("Requested slot is already equipped");
+        //            return;
+        //        }
 
-        foreach (EquipSlot slot in equipSlots)
+        //        slot.data = equipmentData;
+        //        GetComponentInParent<Player>()?.ChangeStance(slot.data);
+        //        DisplayEquipment();
+        //        return;
+        //    }
+        //}
+        //Debug.Log("Requested slot doesn't exist");
+
+
+        if (leftHandEquip) Destroy(leftHandEquip);
+        if (rightHandEquip) Destroy(rightHandEquip);
+
+        //a set of weapon(s) should have identical stancedata, double function call is intended and should be fine
+        if (prefab.GetComponent<Weapon>().WeaponData.leftHanded)
         {
-            if (slot.SlotName == slotName)
+            leftHandEquip = Instantiate(prefab, leftHandHoldPos);
+            if (gameObject.TryGetComponent<Player>(out Player player))
             {
-                if (slot.data != null)
-                {
-                    Debug.Log("Requested slot is already equipped");
-                    return;
-                }
-
-                slot.data = equipmentData;
-                DisplayEquipment();
-                return;
+                player.ChangeStance(prefab.GetComponent<Weapon>().WeaponData);
             }
         }
-        Debug.Log("Requested slot doesn't exist");
-    }
-    void Unequip(SlotList slotName)
-    {
-        foreach (EquipSlot slot in equipSlots)
+        if (prefab.GetComponent<Weapon>().WeaponData.rightHanded)
         {
-            if (slot.SlotName == slotName)
+            rightHandEquip = Instantiate(prefab, rightHandHoldPos);
+            if (gameObject.TryGetComponent<Player>(out Player player))
             {
-                slot.data = null;
-                DisplayEquipment();
-                return;
+                player.ChangeStance(prefab.GetComponent<Weapon>().WeaponData);
             }
         }
-        Debug.Log("Requested slot doesn't exist");
+
+        OnWeaponEquip? .Invoke();   //Invoke after weapon is equipped, listener is dependant on weapon
+    }
+    public void Unequip()
+    {
+        //foreach (EquipSlot slot in equipSlots)
+        //{
+        //    if (slot.SlotName == slotName)
+        //    {
+        //        slot.data = null;
+        //        DisplayEquipment();
+        //        return;
+        //    }
+        //}
+        //Debug.Log("Requested slot doesn't exist");
+
+        Destroy(leftHandEquip);
+        Destroy(rightHandEquip);
     }
 
+    //[SerializeField] SlotList testSlot;
+    //[SerializeField] EquipmentList testEquipment;
+    //[ContextMenu("testEquip")]
+    //void TestEquip()
+    //{
+    //    Equip(testSlot, testEquipment);
+    //}
+    //[ContextMenu("testUnequip")]
+    //void TestUnequip()
+    //{
+    //    Unequip(testSlot);
+    //}
 
-    [SerializeField] SlotList testSlot;
-    [SerializeField] EquipmentList testEquipment;
     [ContextMenu("testEquip")]
     void TestEquip()
     {
-        Equip(testSlot, testEquipment);
+        Equip(Weapon_Halberd);
     }
     [ContextMenu("testUnequip")]
     void TestUnequip()
     {
-        Unequip(testSlot);
+        Unequip();
     }
 }

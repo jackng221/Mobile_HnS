@@ -71,5 +71,29 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 64370003151808260, guid: f61def225eac3e247985f6679965a655,
+        type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f61def225eac3e247985f6679965a655, type: 3}
+--- !u!1 &7866055919414449572 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 131468, guid: f61def225eac3e247985f6679965a655,
+    type: 3}
+  m_PrefabInstance: {fileID: 7866055919414318120}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3159800715666512759
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7866055919414449572}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87389f879cafe09419bf0a38e2f6326f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wepData: {fileID: 11400000, guid: 817ae9919c53dd64690664d54a3b682a, type: 2}
